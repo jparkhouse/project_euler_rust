@@ -1,0 +1,5 @@
+[alias]
+scaffold = "run -q --package xtask -- scaffold"
+solve    = "run -q --package xtask -- solve"
+all      = "run -q --package xtask -- all"
+time     = "run -q --package xtask -- time"
