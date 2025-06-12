@@ -60,7 +60,7 @@ fn scaffold(n: u32) -> Result<()> {
     writeln!(f, "// Solution to problem {n:03}")?;
     writeln!(f, "// https://projecteuler.net/problem={n}")?;
     writeln!(f, "")?;
-    writeln!(f, "project-euler::solution!({n});")?;
+    writeln!(f, "project_euler::solution!({n});")?;
     writeln!(f, "")?;
     writeln!(f, "pub fn solve_problem_{n}() -> Option<u64> {{")?;
     writeln!(f, "    None")?;
