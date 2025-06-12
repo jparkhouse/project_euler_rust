@@ -46,7 +46,7 @@ enum Cmd {
 }
 
 fn scaffold(n: u32) -> Result<()> {
-    let dir = Path::new("project-euler").join("src/bin");
+    let dir = Path::new("project_euler").join("src/bin");
     let file = dir.join(format!("problem_{n:03}.rs"));
 
     if file.exists() {
