@@ -6,4 +6,6 @@ Use commands to help manage the problems:
 - `cargo all` - runs all solved solutions
 - `cargo time <n> <iters>` - times the solution to problem <n>, with an optional <iters> parameter (defaulting to 100) to specify how many runs
 
+You can add any helper functions in `./project_euler/src/helpers/mod.rs`
+
 **My Problem 32 solution has been included as an example of how the template works. If you do not care for spoilers, feel free to delete `./project_euler/src/bin/problem_032.rs`.**
