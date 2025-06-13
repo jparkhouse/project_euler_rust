@@ -1,6 +1,4 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod helpers;
 
 pub mod template {
     /// Minimal “runner” that prints `Some(n)` or a helpful notice.
@@ -32,16 +30,4 @@ macro_rules! solution {
             $crate::template::run($func, PROBLEM);
         }
     };
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
 }
