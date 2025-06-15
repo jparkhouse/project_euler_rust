@@ -3,3 +3,4 @@ members = [
     "project_euler",
     "xtask"
 ]
+resolver = "3"
