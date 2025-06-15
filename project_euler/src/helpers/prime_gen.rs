@@ -1,16 +1,20 @@
-use std::cmp::max;
+use std::{cmp::max, collections::HashMap};
 
 /// PrimeGenerator stores a cache of ya boii's sieve, and exposes a number of
 /// methods for interacting with the primes it calculates. Assuming it is used mutably, 
 /// it will auto-extend the cache.
 pub struct PrimeGenerator {
-    memory: Vec<bool>
+    sieve: Vec<bool>,
+    prime_factor_memo: HashMap<usize, Vec<usize>>,
 }
 
 impl PrimeGenerator {
     /// Returns a new instance of PrimeGenerator, populated up to 2
     pub fn new() -> Self {
-        Self { memory: vec![false, false, true] }
+        Self { 
+            sieve: vec![false, false, true],
+            prime_factor_memo: HashMap::new()
+        }
     }
 
     pub fn with_capacity(n: usize) -> Self {
@@ -19,20 +23,17 @@ impl PrimeGenerator {
         new
     }
 
+    /// Returns primes by 0th index.
     pub fn get_nth_prime(&mut self, n: usize) -> usize {
-        if n == 0 {
-            return 2
-        }
         loop {
             let nth_prime = self.convert_to_prime_iter()
-                // since we have already consumed the n = 0 case, this is safe
-                .skip(n - 1)
+                .skip(n)
                 .next();
 
             match nth_prime {
                 Some(prime) => return prime,
                 None => {
-                    // extend the sieve and try again
+                    // extend the sieve and try again - should never need to happen more than twice, all being sensible
                     self.extend_to(self.approximate_prime_size(n));
                 }
             }
@@ -64,27 +65,50 @@ impl PrimeGenerator {
         if self.is_prime(n) {
             return vec![n]
         }
-        let prime_buffer = self.get_all_primes_up_to(n);
-        let mut n_fac = n;
-        let mut output = Vec::with_capacity(8);
-        while n_fac > 1 {
-            let next_factor = prime_buffer.iter()
-                .find(|&&prime| n_fac % prime == 0)
-                .expect("we have checked that it is not prime, therefore must have some prime factor")
-                .to_owned();
-            output.push(next_factor);
-            n_fac /= next_factor;
+
+        // check our memo cache, and exit early if we know the answer
+        if let Some(factors) = self.prime_factor_memo.get(&n) {
+            return factors.to_vec()
         }
+
+        // otherwise, we figure it out. Wrapped in a scope so that the convert_to_prime_iter() call
+        // gets dropped at the end
+        let output = {
+            let mut prime_iter = self.convert_to_prime_iter();
+            let mut n_fac = n;
+            let mut output = Vec::with_capacity(8);
+            while n_fac > 1 {
+                if let Some(factors) = self.prime_factor_memo.get(&n_fac) {
+                    output.extend_from_slice(factors);
+                    break
+                }
+                // work through the iterator to find the next smallest prime factor
+                let next_factor = prime_iter.find(|&prime| n_fac % prime == 0)
+                    .expect("we have checked that it is not prime, therefore must have some prime factor")
+                    .to_owned();
+                // pull it out of n_fac as many times as required
+                while n_fac % next_factor == 0 {
+                    output.push(next_factor);
+                    n_fac /= next_factor;
+                }
+            }
+            output
+        };
+        
+
+        // update our memo cache
+        self.prime_factor_memo.insert(n, output.clone());
+
         output
     }
 
     pub fn is_prime(&mut self, n: usize) -> bool {
         self.extend_to(n + 1);
-        self.memory[n]
+        self.sieve[n]
     }
 
     pub fn convert_to_prime_iter(&self) -> impl Iterator<Item = usize> {
-        self.memory.iter()
+        self.sieve.iter()
             .enumerate()
             .filter_map(
                 |(ind, is_prime)| {
@@ -98,21 +122,21 @@ impl PrimeGenerator {
     fn extend_to(&mut self, n: usize) {
         // establish how much extension we need, and return early if we
         // are already at that size or larger
-        let gap = match n.checked_sub(self.memory.len()) {
+        let gap = match n.checked_sub(self.sieve.len()) {
             Some(val) => val,
             None => return
         };
 
         // extend the memory with true values
-        self.memory.extend_from_slice(vec![true; gap].as_slice());
+        self.sieve.extend_from_slice(vec![true; gap].as_slice());
         // iterate over and turn off all non-primes in the new memory
-        let max = self.memory.len();
+        let max = self.sieve.len();
         for ind in 0 .. max {
-            if self.memory[ind] { // true when prime
+            if self.sieve[ind] { // true when prime
                 // start from the second multiple of that prime, and run in multiples until the end
                 for non_prime_ind in (2*ind .. max).step_by(ind) {
                     // multiple of ind must be non-prime
-                    self.memory[non_prime_ind] = false
+                    self.sieve[non_prime_ind] = false
                 }
             }
         }
@@ -183,5 +207,17 @@ mod tests {
         
         // assert
         assert_eq!(prime_factors.as_slice(), [17])
+    }
+
+    #[test]
+    fn correctly_identifies_10th_prime() {
+        // arrange
+        let mut prime_gen = PrimeGenerator::new();
+
+        // act
+        let tenth_prime = prime_gen.get_nth_prime(9);
+
+        // assert
+        assert_eq!(tenth_prime, 29)
     }
 }
